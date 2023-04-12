@@ -11,11 +11,43 @@ from scipy.interpolate import CubicSpline
 from scipy import ndimage
 import argparse
 
+from sklearn import metrics as sk_metrics
+
+def pick_label(label,predict,oth_no,tar_no):
+    oth_id=label==oth_no
+    tar_id=label==tar_no
+
+    oth_label=label[oth_id]
+    oth_predict=predict[oth_id]
+    tar_label=label[tar_id]
+    tar_predict=predict[tar_id]
+
+    reconstract_label=np.concatenate([oth_label,tar_label])
+    reconstract_predict=np.concatenate([oth_predict,tar_predict])
+
+    # 更改predict中其余id
+    for i in range(np.shape(reconstract_predict)[0]):
+        if reconstract_predict[i]!=oth_no and reconstract_predict[i]!=tar_no:
+            reconstract_predict[i]=oth_no
+
+    # 处理tar_no=1 & oth_no=0:
+    if tar_no!=1 or oth_no!=0:
+        for i in range(np.shape(reconstract_label)[0]):
+            # deal with reconstract_label
+            if reconstract_label[i]==oth_no:
+                reconstract_label[i]=0
+            if reconstract_label[i]==tar_no:
+                reconstract_label[i]=1
+            #  deal with reconstract_predict
+            if reconstract_predict[i]==oth_no:
+                reconstract_predict[i]=0
+            if reconstract_predict[i]==tar_no:
+                reconstract_predict[i]=1
+    return reconstract_label,reconstract_predict
 # lib path
 PATH = os.path.dirname(os.path.realpath(__file__))
 def compute_class_weight(class_weight, *, classes, y):
     # Import error caused by circular imports.
-    from ..preprocessing import LabelEncoder
 
     if set(y) - set(classes):
         raise ValueError("classes should include all valid labels that can "
